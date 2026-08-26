@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#1e3a5f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e3a5f'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Arial, sans-serif' fill='white' text-anchor='middle'%3E%E2%9A%96%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gestão Escritório">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Gestão de Tarefas — Escritório</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">⚖️ Gestão do Escritório</span>
+    <nav class="nav-top">
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="tasks">Tarefas</button>
+      <button class="nav-btn" data-view="budgets">Orçamentos</button>
+      <button class="nav-btn" data-view="completed">Concluídas</button>
+    </nav>
+    <button class="settings-btn" id="btn-open-data" data-view="data" aria-label="Dados e backup" title="Dados e backup">⚙️</button>
+  </div>
+</header>
+
+<div id="storage-alert" class="storage-alert hidden"></div>
+
+<main id="app-main">
+
+  <!-- DASHBOARD -->
+  <section id="view-dashboard" class="view active">
+    <h1 class="view-title">Dashboard</h1>
+    <div class="summary-grid">
+      <div class="summary-card summary-pending">
+        <span class="summary-number" id="sum-pending">0</span>
+        <span class="summary-label">Tarefas pendentes</span>
+      </div>
+      <div class="summary-card summary-overdue">
+        <span class="summary-number" id="sum-overdue">0</span>
+        <span class="summary-label">Tarefas atrasadas</span>
+      </div>
+      <div class="summary-card summary-waiting">
+        <span class="summary-number" id="sum-waiting">0</span>
+        <span class="summary-label">Orçamentos aguardando</span>
+      </div>
+      <div class="summary-card summary-incomplete">
+        <span class="summary-number" id="sum-incomplete">0</span>
+        <span class="summary-label">Checklists incompletas</span>
+      </div>
+    </div>
+
+    <h2 class="section-title">Prioridade alta &amp; prazos próximos</h2>
+    <div id="dashboard-highlights" class="card-list"></div>
+  </section>
+
+  <!-- TAREFAS -->
+  <section id="view-tasks" class="view">
+    <h1 class="view-title">Tarefas</h1>
+    <div class="filters-bar">
+      <select id="filter-status">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="andamento">Em andamento</option>
+      </select>
+      <select id="filter-priority">
+        <option value="">Todas as prioridades</option>
+        <option value="alta">Alta</option>
+        <option value="media">Média</option>
+        <option value="baixa">Baixa</option>
+      </select>
+      <select id="sort-tasks">
+        <option value="prazo">Ordenar por prazo</option>
+        <option value="prioridade">Ordenar por prioridade</option>
+      </select>
+    </div>
+    <div id="tasks-list" class="card-list"></div>
+  </section>
+
+  <!-- ORÇAMENTOS -->
+  <section id="view-budgets" class="view">
+    <h1 class="view-title">Orçamentos / Documentos</h1>
+    <div class="filters-bar">
+      <input type="search" id="budget-search" placeholder="Buscar por cliente...">
+      <select id="budget-filter-status">
+        <option value="">Todos os status</option>
+        <option value="aguardando">Aguardando resposta</option>
+        <option value="aceito">Aceito</option>
+        <option value="recusado">Recusado</option>
+      </select>
+    </div>
+    <div id="budgets-list" class="card-list"></div>
+  </section>
+
+  <!-- CONCLUÍDAS -->
+  <section id="view-completed" class="view">
+    <h1 class="view-title">Tarefas Concluídas</h1>
+    <div id="completed-list" class="card-list"></div>
+  </section>
+
+  <!-- DADOS -->
+  <section id="view-data" class="view">
+    <h1 class="view-title">Dados e Backup</h1>
+    <p class="hint-text">Todos os dados ficam salvos apenas neste navegador (localStorage). Exporte regularmente um backup.</p>
+    <div class="data-actions">
+      <button class="btn btn-primary" id="btn-export">⬇️ Exportar backup (.json)</button>
+      <label class="btn btn-secondary" for="input-import">⬆️ Importar backup (.json)</label>
+      <input type="file" id="input-import" accept="application/json" hidden>
+    </div>
+  </section>
+
+</main>
+
+<button id="fab-add" class="fab" aria-label="Adicionar">+</button>
+
+<nav class="nav-bottom">
+  <button class="nav-btn active" data-view="dashboard"><span class="ic">🏠</span><span>Início</span></button>
+  <button class="nav-btn" data-view="tasks"><span class="ic">✅</span><span>Tarefas</span></button>
+  <button class="nav-btn" data-view="budgets"><span class="ic">📁</span><span>Orçamentos</span></button>
+  <button class="nav-btn" data-view="completed"><span class="ic">📋</span><span>Concluídas</span></button>
+</nav>
+
+<!-- MODAL: escolha rápida -->
+<div id="modal-quick-add" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Adicionar</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body quick-choices">
+      <button class="btn btn-primary btn-block" id="quick-add-task">📌 Nova Tarefa</button>
+      <button class="btn btn-primary btn-block" id="quick-add-budget">📁 Novo Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Tarefa -->
+<div id="modal-task" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3 id="task-modal-title">Nova Tarefa</h3><button class="modal-close" data-close>&times;</button></div>
+    <form id="form-task" class="modal-body">
+      <input type="hidden" id="task-id">
+      <label>Título*
+        <input type="text" id="task-title" required maxlength="120">
+      </label>
+      <label>Cliente/Destinatário (opcional)
+        <input type="text" id="task-client" maxlength="120">
+      </label>
+      <label>Descrição
+        <textarea id="task-description" rows="3" maxlength="2000"></textarea>
+      </label>
+      <div class="form-row">
+        <label>Prioridade
+          <select id="task-priority">
+            <option value="alta">Alta</option>
+            <option value="media" selected>Média</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </label>
+        <label>Prazo
+          <input type="date" id="task-due">
+        </label>
+      </div>
+      <label>Status
+        <select id="task-status">
+          <option value="pendente">Pendente</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluida">Concluída</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger hidden" id="task-delete">Excluir</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Orçamento -->
+<div id="modal-budget" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3 id="budget-modal-title">Novo Orçamento</h3><button class="modal-close" data-close>&times;</button></div>
+    <form id="form-budget" class="modal-body">
+      <input type="hidden" id="budget-id">
+      <label>Nome do cliente*
+        <input type="text" id="budget-client" required maxlength="120">
+      </label>
+      <label>Telefone (WhatsApp, opcional)
+        <input type="tel" id="budget-phone" placeholder="Ex: 11999998888" maxlength="20">
+      </label>
+      <label>Descrição do serviço
+        <textarea id="budget-description" rows="3" maxlength="2000"></textarea>
+      </label>
+      <label>Status
+        <select id="budget-status">
+          <option value="aguardando">Aguardando resposta</option>
+          <option value="aceito">Aceito</option>
+          <option value="recusado">Recusado</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger hidden" id="budget-delete">Excluir</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Detalhe do Orçamento (checklist) -->
+<div id="modal-budget-detail" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3 id="budget-detail-title">Checklist</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="budget-progress-fill" class="progress-fill"></div></div>
+        <span id="budget-progress-label" class="progress-label">0/0 documentos</span>
+      </div>
+      <div id="budget-doc-list" class="doc-list"></div>
+      <form id="form-doc-add" class="doc-add-row">
+        <input type="text" id="doc-name" placeholder="Nome do documento" maxlength="120" required>
+        <button type="submit" class="btn btn-secondary">Adicionar</button>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary btn-block" id="budget-gen-message">✉️ Gerar mensagem</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Mensagem -->
+<div id="modal-message" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3>Mensagem</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body">
+      <textarea id="message-text" rows="10"></textarea>
+      <input type="hidden" id="message-phone">
+      <div class="modal-actions modal-actions-wrap">
+        <button type="button" class="btn btn-secondary" id="msg-copy">📋 Copiar</button>
+        <button type="button" class="btn btn-whatsapp" id="msg-whatsapp">💬 WhatsApp</button>
+        <button type="button" class="btn btn-secondary" id="msg-txt">⬇️ .txt</button>
+        <button type="button" class="btn btn-secondary" id="msg-pdf">⬇️ PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
