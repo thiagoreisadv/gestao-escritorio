@@ -169,3 +169,50 @@ function importDataFromFile(file, onDone) {
   reader.onerror = () => showToast('Erro ao ler o arquivo.');
   reader.readAsText(file);
 }
+
+function migrateClientsFromLegacyText(tasksArr, budgetsArr, clientsArr) {
+  if (localStorage.getItem(STORAGE_KEYS.CLIENTS_MIGRATED) === '1') {
+    return { tasks: tasksArr, budgets: budgetsArr, clients: clientsArr, changed: false };
+  }
+
+  const nameToId = new Map();
+  clientsArr.forEach((c) => nameToId.set(c.nome.trim().toLowerCase(), c.id));
+
+  function resolveClient(name) {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return '';
+    const key = trimmed.toLowerCase();
+    if (nameToId.has(key)) return nameToId.get(key);
+    const client = {
+      id: uid(),
+      nome: trimmed,
+      telefone: '',
+      email: '',
+      cpfCnpj: '',
+      endereco: '',
+      observacoes: '',
+      tags: [],
+      createdAt: new Date().toISOString()
+    };
+    clientsArr.push(client);
+    nameToId.set(key, client.id);
+    return client.id;
+  }
+
+  let changed = false;
+  tasksArr.forEach((t) => {
+    if (!t.clientId) {
+      t.clientId = resolveClient(t.client);
+      changed = true;
+    }
+  });
+  budgetsArr.forEach((b) => {
+    if (!b.clientId) {
+      b.clientId = resolveClient(b.clientName);
+      changed = true;
+    }
+  });
+
+  localStorage.setItem(STORAGE_KEYS.CLIENTS_MIGRATED, '1');
+  return { tasks: tasksArr, budgets: budgetsArr, clients: clientsArr, changed };
+}

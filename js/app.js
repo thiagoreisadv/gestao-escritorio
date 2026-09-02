@@ -1,6 +1,7 @@
 // Controlador principal da aplicação
 let tasks = [];
 let budgets = [];
+let clients = [];
 let trash = [];
 let currentBudgetDetailId = null;
 let calendarDate = new Date();
@@ -11,7 +12,18 @@ document.addEventListener('DOMContentLoaded', init);
 function init() {
   tasks = loadTasks();
   budgets = loadBudgets();
+  clients = loadClients();
   trash = loadTrash();
+
+  const migrated = migrateClientsFromLegacyText(tasks, budgets, clients);
+  if (migrated.changed) {
+    tasks = migrated.tasks;
+    budgets = migrated.budgets;
+    clients = migrated.clients;
+    saveTasks(tasks);
+    saveBudgets(budgets);
+    saveClients(clients);
+  }
 
   initTheme();
   wireNav();
