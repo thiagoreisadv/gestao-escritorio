@@ -27,6 +27,7 @@
       <button class="nav-btn" data-view="tasks">Tarefas</button>
       <button class="nav-btn" data-view="board">Quadro</button>
       <button class="nav-btn" data-view="calendar">Calendário</button>
+      <button class="nav-btn" data-view="clients">Clientes</button>
       <button class="nav-btn" data-view="budgets">Orçamentos</button>
       <button class="nav-btn" data-view="completed">Concluídas</button>
     </nav>
@@ -155,6 +156,45 @@
     </div>
   </section>
 
+  <!-- CLIENTES -->
+  <section id="view-clients" class="view">
+    <h1 class="view-title">Clientes</h1>
+    <div class="clients-layout" id="clients-layout">
+      <div class="clients-list-pane">
+        <div class="filters-bar">
+          <input type="search" id="client-search" placeholder="Buscar cliente...">
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btn-new-client">+ Novo cliente</button>
+        <div id="clients-list" class="card-list" style="margin-top:.7rem"></div>
+      </div>
+      <div class="clients-detail-pane">
+        <button type="button" class="btn btn-secondary btn-sm clients-back" id="btn-client-back">← Voltar</button>
+        <div id="client-detail-empty" class="empty-state">Selecione um cliente para ver os detalhes.</div>
+        <div id="client-detail-content" class="hidden">
+          <div class="client-detail-head">
+            <span class="client-detail-avatar" id="client-detail-avatar"></span>
+            <div>
+              <div class="client-detail-name" id="client-detail-name"></div>
+              <div class="client-detail-tags" id="client-detail-tags"></div>
+            </div>
+          </div>
+          <div id="client-detail-fields"></div>
+          <div id="client-detail-notes-wrap" class="hidden">
+            <h2 class="section-title">Observações</h2>
+            <p class="hint-text" id="client-detail-notes"></p>
+          </div>
+          <h2 class="section-title">Tarefas vinculadas</h2>
+          <div id="client-detail-tasks" class="card-list"></div>
+          <h2 class="section-title">Orçamentos vinculados</h2>
+          <div id="client-detail-budgets" class="card-list"></div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="btn-client-edit">✏️ Editar cliente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ORÇAMENTOS -->
   <section id="view-budgets" class="view">
     <h1 class="view-title">Orçamentos / Documentos</h1>
@@ -240,6 +280,7 @@
   <button class="nav-btn" data-view="tasks"><span class="ic">✅</span><span>Tarefas</span></button>
   <button class="nav-btn" data-view="board"><span class="ic">🗂️</span><span>Quadro</span></button>
   <button class="nav-btn" data-view="calendar"><span class="ic">📅</span><span>Calendário</span></button>
+  <button class="nav-btn" data-view="clients"><span class="ic">👤</span><span>Clientes</span></button>
   <button class="nav-btn" data-view="budgets"><span class="ic">📁</span><span>Orçamentos</span></button>
   <button class="nav-btn" data-view="completed"><span class="ic">📋</span><span>Concluídas</span></button>
 </nav>
@@ -279,8 +320,12 @@
       <label>Título*
         <input type="text" id="task-title" required maxlength="120">
       </label>
-      <label>Cliente/Destinatário (opcional)
-        <input type="text" id="task-client" maxlength="120">
+      <label>Cliente (opcional)
+        <div class="client-autocomplete">
+          <input type="text" id="task-client-input" maxlength="120" autocomplete="off" placeholder="Digite para buscar ou criar">
+          <input type="hidden" id="task-client-id">
+          <div class="client-ac-dropdown hidden" id="task-client-dropdown"></div>
+        </div>
       </label>
       <label>Descrição
         <textarea id="task-description" rows="3" maxlength="2000"></textarea>
@@ -348,7 +393,11 @@
     <form id="form-budget" class="modal-body">
       <input type="hidden" id="budget-id">
       <label>Nome do cliente*
-        <input type="text" id="budget-client" required maxlength="120">
+        <div class="client-autocomplete">
+          <input type="text" id="budget-client-input" required maxlength="120" autocomplete="off" placeholder="Digite para buscar ou criar">
+          <input type="hidden" id="budget-client-id">
+          <div class="client-ac-dropdown hidden" id="budget-client-dropdown"></div>
+        </div>
       </label>
       <label>Telefone (WhatsApp, opcional)
         <input type="tel" id="budget-phone" placeholder="Ex: 11999998888" maxlength="20">
@@ -366,6 +415,41 @@
       <div class="modal-actions">
         <button type="button" class="btn btn-danger hidden" id="budget-delete">Excluir</button>
         <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Cliente -->
+<div id="modal-client" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3 id="client-modal-title">Novo Cliente</h3><button class="modal-close" data-close>&times;</button></div>
+    <form id="form-client" class="modal-body">
+      <input type="hidden" id="client-id">
+      <label>Nome*
+        <input type="text" id="client-nome" required maxlength="120">
+      </label>
+      <label>Telefone
+        <input type="tel" id="client-telefone" maxlength="20">
+      </label>
+      <label>E-mail
+        <input type="email" id="client-email" maxlength="120">
+      </label>
+      <label>CPF/CNPJ
+        <input type="text" id="client-cpf-cnpj" maxlength="20">
+      </label>
+      <label>Endereço
+        <input type="text" id="client-endereco" maxlength="200">
+      </label>
+      <label>Categoria (separadas por vírgula)
+        <input type="text" id="client-tags" placeholder="Ex: pessoa física, previdenciário">
+      </label>
+      <label>Observações
+        <textarea id="client-observacoes" rows="3" maxlength="2000"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger hidden" id="client-delete">Excluir</button>
+        <button type="submit" class="btn btn-primary">Salvar cliente</button>
       </div>
     </form>
   </div>
@@ -460,6 +544,7 @@
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/messages.js"></script>
+<script src="js/clients.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>
 </body>

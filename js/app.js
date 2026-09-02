@@ -1,6 +1,7 @@
 // Controlador principal da aplicação
 let tasks = [];
 let budgets = [];
+let clients = [];
 let trash = [];
 let currentBudgetDetailId = null;
 let calendarDate = new Date();
@@ -11,13 +12,28 @@ document.addEventListener('DOMContentLoaded', init);
 function init() {
   tasks = loadTasks();
   budgets = loadBudgets();
+  clients = loadClients();
   trash = loadTrash();
+
+  const migrated = migrateClientsFromLegacyText(tasks, budgets, clients);
+  if (migrated.changed) {
+    tasks = migrated.tasks;
+    budgets = migrated.budgets;
+    clients = migrated.clients;
+    saveTasks(tasks);
+    saveBudgets(budgets);
+    saveClients(clients);
+  }
 
   initTheme();
   wireNav();
   wireFab();
   wireTaskModal();
+  setupClientAutocomplete('task-client-input', 'task-client-id', 'task-client-dropdown');
   wireBudgetModal();
+  setupClientAutocomplete('budget-client-input', 'budget-client-id', 'budget-client-dropdown');
+  wireClientModal();
+  wireClientsView();
   wireBudgetDetailModal();
   wireMessageModal();
   wireDataView();
@@ -36,6 +52,7 @@ function renderAll() {
   renderDashboard();
   renderTasks();
   renderBudgets();
+  renderClients();
   renderCompleted();
   renderTrash();
   renderBackupReminder();
@@ -212,7 +229,7 @@ function onAnalyzeCapture() {
 
   if (result.type === 'budget') {
     openBudgetModal();
-    document.getElementById('budget-client').value = result.fields.clientName;
+    document.getElementById('budget-client-input').value = result.fields.clientName;
     document.getElementById('budget-description').value = result.fields.description;
     document.getElementById('budget-phone').value = result.fields.phone;
     showToast('📁 Identifiquei um orçamento. Revise os campos e salve.');
@@ -220,7 +237,7 @@ function onAnalyzeCapture() {
     openTaskModal();
     document.getElementById('task-title').value = result.fields.title;
     document.getElementById('task-description').value = result.fields.description;
-    document.getElementById('task-client').value = result.fields.client;
+    document.getElementById('task-client-input').value = result.fields.client;
     document.getElementById('task-priority').value = result.fields.priority;
     document.getElementById('task-due').value = result.fields.dueDate;
     showToast('📌 Identifiquei uma tarefa. Revise os campos e salve.');
@@ -439,7 +456,8 @@ function openTaskModal(id) {
     document.getElementById('task-modal-title').textContent = 'Editar Tarefa';
     document.getElementById('task-id').value = task.id;
     document.getElementById('task-title').value = task.title;
-    document.getElementById('task-client').value = task.client || '';
+    document.getElementById('task-client-input').value = task.client || '';
+    document.getElementById('task-client-id').value = task.clientId || '';
     document.getElementById('task-description').value = task.description || '';
     document.getElementById('task-priority').value = task.priority;
     document.getElementById('task-due').value = task.dueDate || '';
@@ -469,9 +487,11 @@ function onSubmitTask(e) {
   if (!title) return;
 
   const newStatus = document.getElementById('task-status').value;
+  const clientInfo = resolveClientIdFromInput('task-client-input', 'task-client-id');
   const data = {
     title,
-    client: document.getElementById('task-client').value.trim(),
+    client: clientInfo.clientName,
+    clientId: clientInfo.clientId,
     description: document.getElementById('task-description').value.trim(),
     priority: document.getElementById('task-priority').value,
     dueDate: document.getElementById('task-due').value,
@@ -540,6 +560,7 @@ function maybeCreateRecurrence(task) {
     createdAt: new Date().toISOString(),
     title: task.title,
     client: task.client || '',
+    clientId: task.clientId || '',
     description: task.description || '',
     priority: task.priority,
     dueDate: nextDueDate,
@@ -760,7 +781,8 @@ function openBudgetModal(id) {
     if (!budget) return;
     document.getElementById('budget-modal-title').textContent = 'Editar Orçamento';
     document.getElementById('budget-id').value = budget.id;
-    document.getElementById('budget-client').value = budget.clientName;
+    document.getElementById('budget-client-input').value = budget.clientName;
+    document.getElementById('budget-client-id').value = budget.clientId || '';
     document.getElementById('budget-phone').value = budget.phone || '';
     document.getElementById('budget-description').value = budget.description || '';
     document.getElementById('budget-status').value = budget.status;
@@ -776,11 +798,12 @@ function openBudgetModal(id) {
 function onSubmitBudget(e) {
   e.preventDefault();
   const id = document.getElementById('budget-id').value;
-  const clientName = document.getElementById('budget-client').value.trim();
-  if (!clientName) return;
+  const clientInfo = resolveClientIdFromInput('budget-client-input', 'budget-client-id');
+  if (!clientInfo.clientName) return;
 
   const data = {
-    clientName,
+    clientName: clientInfo.clientName,
+    clientId: clientInfo.clientId,
     phone: document.getElementById('budget-phone').value.trim(),
     description: document.getElementById('budget-description').value.trim(),
     status: document.getElementById('budget-status').value
@@ -1206,7 +1229,19 @@ function wireDataView() {
     importDataFromFile(file, () => {
       tasks = loadTasks();
       budgets = loadBudgets();
+      clients = loadClients();
       trash = loadTrash();
+
+      const migrated = migrateClientsFromLegacyText(tasks, budgets, clients);
+      if (migrated.changed) {
+        tasks = migrated.tasks;
+        budgets = migrated.budgets;
+        clients = migrated.clients;
+        saveTasks(tasks);
+        saveBudgets(budgets);
+        saveClients(clients);
+      }
+
       renderAll();
     });
     e.target.value = '';
@@ -1263,15 +1298,23 @@ function moveBudgetToTrash(budget) {
   saveTrash(trash);
 }
 
+function moveClientToTrash(client) {
+  trash.push({ id: uid(), type: 'client', data: client, deletedAt: new Date().toISOString() });
+  saveTrash(trash);
+}
+
 function restoreTrashItem(trashId) {
   const entry = trash.find((t) => t.id === trashId);
   if (!entry) return;
   if (entry.type === 'task') {
     tasks.push(entry.data);
     saveTasks(tasks);
-  } else {
+  } else if (entry.type === 'budget') {
     budgets.push(entry.data);
     saveBudgets(budgets);
+  } else if (entry.type === 'client') {
+    clients.push(entry.data);
+    saveClients(clients);
   }
   trash = trash.filter((t) => t.id !== trashId);
   saveTrash(trash);
@@ -1295,8 +1338,8 @@ function renderTrash() {
   }
   const list = trash.slice().sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
   container.innerHTML = list.map((entry) => {
-    const name = entry.type === 'task' ? entry.data.title : entry.data.clientName;
-    const typeLabel = entry.type === 'task' ? '📌 Tarefa' : '📁 Orçamento';
+    const name = entry.type === 'task' ? entry.data.title : entry.type === 'budget' ? entry.data.clientName : entry.data.nome;
+    const typeLabel = entry.type === 'task' ? '📌 Tarefa' : entry.type === 'budget' ? '📁 Orçamento' : '👤 Cliente';
     return `
     <div class="item-card">
       <div class="item-title-wrap">

@@ -85,6 +85,7 @@ function applyRemoteData(data) {
   try {
     if (Array.isArray(data.tasks)) { tasks = data.tasks; saveTasks(tasks); }
     if (Array.isArray(data.budgets)) { budgets = data.budgets; saveBudgets(budgets); }
+    if (Array.isArray(data.clients)) { clients = data.clients; saveClients(clients); }
     if (Array.isArray(data.trash)) { trash = data.trash; saveTrash(trash); }
     renderAll();
   } finally {
@@ -106,6 +107,7 @@ function pushToCloud() {
   const payload = {
     tasks: loadTasks(),
     budgets: loadBudgets(),
+    clients: loadClients(),
     trash: loadTrash(),
     updatedAt: new Date().toISOString()
   };
@@ -130,8 +132,8 @@ function connectSync(config, syncId, onConflict) {
     return docRef.get();
   }).then((snapshot) => {
     const remote = snapshot.exists ? snapshot.data() : null;
-    const localHasData = loadTasks().length > 0 || loadBudgets().length > 0;
-    const remoteHasData = remote && (remote.tasks || []).length + (remote.budgets || []).length > 0;
+    const localHasData = loadTasks().length > 0 || loadBudgets().length > 0 || loadClients().length > 0;
+    const remoteHasData = remote && (remote.tasks || []).length + (remote.budgets || []).length + (remote.clients || []).length > 0;
 
     return new Promise((resolve) => {
       const finish = (useRemote) => {

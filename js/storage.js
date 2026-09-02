@@ -2,6 +2,8 @@
 const STORAGE_KEYS = {
   TASKS: 'lex_tasks',
   BUDGETS: 'lex_budgets',
+  CLIENTS: 'lex_clients',
+  CLIENTS_MIGRATED: 'lex_clients_migrated',
   TRASH: 'lex_trash',
   LAST_EXPORT: 'lex_last_export',
   THEME: 'lex_theme'
@@ -46,6 +48,14 @@ function saveBudgets(budgets) {
   return persist(STORAGE_KEYS.BUDGETS, budgets);
 }
 
+function loadClients() {
+  return safeParse(localStorage.getItem(STORAGE_KEYS.CLIENTS), []);
+}
+
+function saveClients(clients) {
+  return persist(STORAGE_KEYS.CLIENTS, clients);
+}
+
 function loadTrash() {
   return safeParse(localStorage.getItem(STORAGE_KEYS.TRASH), []);
 }
@@ -70,7 +80,7 @@ function persist(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
     showStorageAlert(null);
-    if (key !== STORAGE_KEYS.TASKS && key !== STORAGE_KEYS.BUDGETS && key !== STORAGE_KEYS.TRASH) return true;
+    if (key !== STORAGE_KEYS.TASKS && key !== STORAGE_KEYS.BUDGETS && key !== STORAGE_KEYS.TRASH && key !== STORAGE_KEYS.CLIENTS) return true;
     if (typeof window.syncNotifyLocalChange === 'function') window.syncNotifyLocalChange();
     return true;
   } catch (e) {
@@ -101,6 +111,7 @@ function buildBackupPayload() {
     exportedAt: new Date().toISOString(),
     tasks: loadTasks(),
     budgets: loadBudgets(),
+    clients: loadClients(),
     trash: loadTrash()
   };
 }
@@ -138,7 +149,7 @@ function importDataFromFile(file, onDone) {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!data || (!Array.isArray(data.tasks) && !Array.isArray(data.budgets))) {
+      if (!data || (!Array.isArray(data.tasks) && !Array.isArray(data.budgets) && !Array.isArray(data.clients))) {
         showToast('Arquivo inválido.');
         return;
       }
@@ -146,7 +157,13 @@ function importDataFromFile(file, onDone) {
       if (!window.confirm(confirmMsg)) return;
       if (Array.isArray(data.tasks)) saveTasks(data.tasks);
       if (Array.isArray(data.budgets)) saveBudgets(data.budgets);
+      if (Array.isArray(data.clients)) saveClients(data.clients);
       if (Array.isArray(data.trash)) saveTrash(data.trash);
+      // Backups exportados antes da funcionalidade de Clientes podem não ter
+      // `clientId` em tarefas/orçamentos. Como a migração só roda uma vez por
+      // dispositivo, limpamos a flag para que ela seja reexecutada (via onDone)
+      // e os dados recém-importados sejam vinculados corretamente.
+      localStorage.removeItem(STORAGE_KEYS.CLIENTS_MIGRATED);
       showToast('Backup importado com sucesso.');
       if (typeof onDone === 'function') onDone();
     } catch (e) {
@@ -156,4 +173,51 @@ function importDataFromFile(file, onDone) {
   };
   reader.onerror = () => showToast('Erro ao ler o arquivo.');
   reader.readAsText(file);
+}
+
+function migrateClientsFromLegacyText(tasksArr, budgetsArr, clientsArr) {
+  if (localStorage.getItem(STORAGE_KEYS.CLIENTS_MIGRATED) === '1') {
+    return { tasks: tasksArr, budgets: budgetsArr, clients: clientsArr, changed: false };
+  }
+
+  const nameToId = new Map();
+  clientsArr.forEach((c) => nameToId.set(c.nome.trim().toLowerCase(), c.id));
+
+  function resolveClient(name) {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return '';
+    const key = trimmed.toLowerCase();
+    if (nameToId.has(key)) return nameToId.get(key);
+    const client = {
+      id: uid(),
+      nome: trimmed,
+      telefone: '',
+      email: '',
+      cpfCnpj: '',
+      endereco: '',
+      observacoes: '',
+      tags: [],
+      createdAt: new Date().toISOString()
+    };
+    clientsArr.push(client);
+    nameToId.set(key, client.id);
+    return client.id;
+  }
+
+  let changed = false;
+  tasksArr.forEach((t) => {
+    if (!t.clientId) {
+      t.clientId = resolveClient(t.client);
+      changed = true;
+    }
+  });
+  budgetsArr.forEach((b) => {
+    if (!b.clientId) {
+      b.clientId = resolveClient(b.clientName);
+      changed = true;
+    }
+  });
+
+  localStorage.setItem(STORAGE_KEYS.CLIENTS_MIGRATED, '1');
+  return { tasks: tasksArr, budgets: budgetsArr, clients: clientsArr, changed };
 }
