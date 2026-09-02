@@ -803,7 +803,7 @@ function renderClientsList() {
 
 (`openClientDetail` is defined in Task 7 — this file won't be call-safe until then, which is fine since nothing invokes `renderClientsList()` yet until Task 13.)
 
-- [ ] **Step 2: Manual verification**
+- [ ] **Step 3: Manual verification**
 
 Start the local server, open the app, open devtools console, and run:
 
@@ -814,7 +814,7 @@ document.getElementById('clients-list').innerHTML = clients.map(clientCardHtml).
 
 Expected: the Clientes list area (switch to the Clientes view first) now shows one row with a blue circular avatar "MC", the name "Maria Costa", the phone, and a "Pessoa física" badge — confirming `escapeHtml`/color hashing/markup all work. (Clicking the row will error since `openClientDetail` doesn't exist yet — that's expected at this point.)
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add js/clients.js
