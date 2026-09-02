@@ -1,11 +1,11 @@
 {
-  "name": "Gestão de Tarefas — Escritório",
-  "short_name": "Gestão Escritório",
+  "name": "Thiago Reis Advocacia",
+  "short_name": "Thiago Reis Advocacia",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#1e3a5f",
+  "background_color": "#170b28",
+  "theme_color": "#170b28",
   "icons": [
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
