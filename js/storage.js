@@ -1,5 +1,11 @@
 // Camada de persistência em localStorage
-const STORAGE_KEYS = { TASKS: 'lex_tasks', BUDGETS: 'lex_budgets' };
+const STORAGE_KEYS = {
+  TASKS: 'lex_tasks',
+  BUDGETS: 'lex_budgets',
+  TRASH: 'lex_trash',
+  LAST_EXPORT: 'lex_last_export',
+  THEME: 'lex_theme'
+};
 
 function showStorageAlert(message) {
   const el = document.getElementById('storage-alert');
@@ -40,10 +46,32 @@ function saveBudgets(budgets) {
   return persist(STORAGE_KEYS.BUDGETS, budgets);
 }
 
+function loadTrash() {
+  return safeParse(localStorage.getItem(STORAGE_KEYS.TRASH), []);
+}
+
+function saveTrash(trash) {
+  return persist(STORAGE_KEYS.TRASH, trash);
+}
+
+function getLastExportAt() {
+  return localStorage.getItem(STORAGE_KEYS.LAST_EXPORT) || '';
+}
+
+function setLastExportAt(iso) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_EXPORT, iso);
+  } catch (e) {
+    console.error('Não foi possível registrar a data do backup', e);
+  }
+}
+
 function persist(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
     showStorageAlert(null);
+    if (key !== STORAGE_KEYS.TASKS && key !== STORAGE_KEYS.BUDGETS && key !== STORAGE_KEYS.TRASH) return true;
+    if (typeof window.syncNotifyLocalChange === 'function') window.syncNotifyLocalChange();
     return true;
   } catch (e) {
     console.error('Falha ao salvar dados', e);
@@ -53,11 +81,8 @@ function persist(key, data) {
 }
 
 function exportData() {
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    tasks: loadTasks(),
-    budgets: loadBudgets()
-  };
+  const payload = buildBackupPayload();
+  const nowIso = payload.exportedAt;
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -68,6 +93,44 @@ function exportData() {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setLastExportAt(nowIso);
+}
+
+function buildBackupPayload() {
+  return {
+    exportedAt: new Date().toISOString(),
+    tasks: loadTasks(),
+    budgets: loadBudgets(),
+    trash: loadTrash()
+  };
+}
+
+function canShareBackup() {
+  if (!navigator.canShare || !window.File) return false;
+  try {
+    const testFile = new File(['{}'], 'teste.json', { type: 'application/json' });
+    return navigator.canShare({ files: [testFile] });
+  } catch (e) {
+    return false;
+  }
+}
+
+async function shareBackup() {
+  const payload = buildBackupPayload();
+  const stamp = todayISO();
+  const file = new File([JSON.stringify(payload, null, 2)], `backup-escritorio-${stamp}.json`, { type: 'application/json' });
+  try {
+    await navigator.share({
+      files: [file],
+      title: 'Backup — Gestão do Escritório',
+      text: 'Backup dos dados do sistema de gestão. Importe este arquivo em "Dados e Backup" no outro aparelho.'
+    });
+    setLastExportAt(payload.exportedAt);
+    return true;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('Falha ao compartilhar backup', e);
+    return false;
+  }
 }
 
 function importDataFromFile(file, onDone) {
@@ -83,6 +146,7 @@ function importDataFromFile(file, onDone) {
       if (!window.confirm(confirmMsg)) return;
       if (Array.isArray(data.tasks)) saveTasks(data.tasks);
       if (Array.isArray(data.budgets)) saveBudgets(data.budgets);
+      if (Array.isArray(data.trash)) saveTrash(data.trash);
       showToast('Backup importado com sucesso.');
       if (typeof onDone === 'function') onDone();
     } catch (e) {

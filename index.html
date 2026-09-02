@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1e3a5f">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e3a5f'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Arial, sans-serif' fill='white' text-anchor='middle'%3E%E2%9A%96%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
@@ -12,24 +12,38 @@
 <meta name="apple-mobile-web-app-title" content="Gestão Escritório">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Gestão de Tarefas — Escritório</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <header class="topbar">
   <div class="topbar-inner">
-    <span class="brand">⚖️ Gestão do Escritório</span>
+    <span class="brand"><span class="brand-badge">⚖️</span> Gestão do Escritório</span>
     <nav class="nav-top">
       <button class="nav-btn active" data-view="dashboard">Dashboard</button>
       <button class="nav-btn" data-view="tasks">Tarefas</button>
+      <button class="nav-btn" data-view="board">Quadro</button>
+      <button class="nav-btn" data-view="calendar">Calendário</button>
       <button class="nav-btn" data-view="budgets">Orçamentos</button>
       <button class="nav-btn" data-view="completed">Concluídas</button>
     </nav>
-    <button class="settings-btn" id="btn-open-data" data-view="data" aria-label="Dados e backup" title="Dados e backup">⚙️</button>
+    <div class="topbar-icons">
+      <button class="icon-btn" id="btn-open-search" aria-label="Buscar" title="Buscar">🔎</button>
+      <button class="icon-btn" id="btn-toggle-theme" aria-label="Alternar tema" title="Alternar tema">🌙</button>
+      <button class="icon-btn" id="btn-open-data" data-view="data" aria-label="Dados e backup" title="Dados e backup">⚙️</button>
+    </div>
   </div>
 </header>
 
 <div id="storage-alert" class="storage-alert hidden"></div>
+<div id="backup-reminder" class="backup-reminder hidden">
+  <span id="backup-reminder-text"></span>
+  <button class="btn btn-sm btn-primary" id="backup-reminder-btn">Exportar agora</button>
+  <button class="reminder-dismiss" id="backup-reminder-dismiss" aria-label="Dispensar">&times;</button>
+</div>
 
 <main id="app-main">
 
@@ -38,20 +52,37 @@
     <h1 class="view-title">Dashboard</h1>
     <div class="summary-grid">
       <div class="summary-card summary-pending">
+        <span class="summary-icon">✅</span>
         <span class="summary-number" id="sum-pending">0</span>
         <span class="summary-label">Tarefas pendentes</span>
       </div>
       <div class="summary-card summary-overdue">
+        <span class="summary-icon">⏰</span>
         <span class="summary-number" id="sum-overdue">0</span>
         <span class="summary-label">Tarefas atrasadas</span>
       </div>
       <div class="summary-card summary-waiting">
+        <span class="summary-icon">📁</span>
         <span class="summary-number" id="sum-waiting">0</span>
         <span class="summary-label">Orçamentos aguardando</span>
       </div>
       <div class="summary-card summary-incomplete">
+        <span class="summary-icon">📄</span>
         <span class="summary-number" id="sum-incomplete">0</span>
         <span class="summary-label">Checklists incompletas</span>
+      </div>
+    </div>
+
+    <div class="distribution-grid">
+      <div class="distribution-card">
+        <h3 class="distribution-title">Tarefas por status</h3>
+        <div id="dist-tasks" class="dist-bar"></div>
+        <div id="dist-tasks-legend" class="dist-legend"></div>
+      </div>
+      <div class="distribution-card">
+        <h3 class="distribution-title">Orçamentos por status</h3>
+        <div id="dist-budgets" class="dist-bar"></div>
+        <div id="dist-budgets-legend" class="dist-legend"></div>
       </div>
     </div>
 
@@ -78,8 +109,50 @@
         <option value="prazo">Ordenar por prazo</option>
         <option value="prioridade">Ordenar por prioridade</option>
       </select>
+      <select id="filter-tag">
+        <option value="">Todas as etiquetas</option>
+      </select>
     </div>
     <div id="tasks-list" class="card-list"></div>
+  </section>
+
+  <!-- QUADRO (KANBAN) -->
+  <section id="view-board" class="view">
+    <h1 class="view-title">Quadro</h1>
+    <div class="board-grid">
+      <div class="board-column">
+        <h2 class="board-column-title">📥 Pendente <span id="board-count-pendente" class="board-count">0</span></h2>
+        <div id="board-list-pendente" class="board-list"></div>
+      </div>
+      <div class="board-column">
+        <h2 class="board-column-title">🔧 Em andamento <span id="board-count-andamento" class="board-count">0</span></h2>
+        <div id="board-list-andamento" class="board-list"></div>
+      </div>
+      <div class="board-column">
+        <h2 class="board-column-title">✅ Concluída <span id="board-count-concluida" class="board-count">0</span></h2>
+        <div id="board-list-concluida" class="board-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALENDÁRIO -->
+  <section id="view-calendar" class="view">
+    <h1 class="view-title">Calendário</h1>
+    <div class="calendar-toolbar">
+      <button class="btn btn-secondary btn-sm" id="cal-prev" aria-label="Mês anterior">◀</button>
+      <span id="cal-month-label" class="calendar-month-label"></span>
+      <button class="btn btn-secondary btn-sm" id="cal-next" aria-label="Próximo mês">▶</button>
+      <button class="btn btn-secondary btn-sm" id="cal-today">Hoje</button>
+    </div>
+    <div class="calendar-weekdays">
+      <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+    </div>
+    <div id="calendar-grid" class="calendar-grid"></div>
+    <div class="calendar-legend">
+      <span><span class="dot" style="background:var(--red-600)"></span>Alta</span>
+      <span><span class="dot" style="background:var(--amber-600)"></span>Média</span>
+      <span><span class="dot" style="background:var(--green-600)"></span>Baixa</span>
+    </div>
   </section>
 
   <!-- ORÇAMENTOS -->
@@ -107,11 +180,55 @@
   <section id="view-data" class="view">
     <h1 class="view-title">Dados e Backup</h1>
     <p class="hint-text">Todos os dados ficam salvos apenas neste navegador (localStorage). Exporte regularmente um backup.</p>
+    <p class="hint-text" id="last-export-info"></p>
     <div class="data-actions">
       <button class="btn btn-primary" id="btn-export">⬇️ Exportar backup (.json)</button>
+      <button class="btn btn-secondary hidden" id="btn-share">📤 Compartilhar / enviar para outro aparelho</button>
       <label class="btn btn-secondary" for="input-import">⬆️ Importar backup (.json)</label>
       <input type="file" id="input-import" accept="application/json" hidden>
     </div>
+    <p class="hint-text">💡 Backup manual: exporte aqui, envie o arquivo para o outro aparelho (WhatsApp, e-mail, Drive...) e importe lá. Sem sincronização automática — cada aparelho fica com sua própria cópia até você importar de novo.</p>
+
+    <h2 class="section-title">☁️ Sincronização ao vivo entre dispositivos</h2>
+    <div id="sync-status-box" class="sync-status-box">
+      <span id="sync-status-dot" class="sync-dot sync-dot-off"></span>
+      <span id="sync-status-text">Desativada</span>
+    </div>
+
+    <div id="sync-setup-form">
+      <p class="hint-text">Cole aqui a configuração do seu projeto Firebase (veja o passo a passo que te enviei). Use o mesmo ID de sincronização em todos os aparelhos.</p>
+      <label>Configuração do Firebase (cole o objeto firebaseConfig)
+        <textarea id="sync-config-input" rows="6" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", ...}'></textarea>
+      </label>
+      <label>ID de sincronização (o mesmo em todos os aparelhos)
+        <div class="sync-id-row">
+          <input type="text" id="sync-id-input" placeholder="Ex: esc-a1b2c3d4">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-sync-id">🎲 Gerar</button>
+        </div>
+      </label>
+      <button type="button" class="btn btn-primary btn-block" id="btn-connect-sync">🔗 Conectar</button>
+    </div>
+
+    <div id="sync-connected-panel" class="hidden">
+      <p class="hint-text">ID de sincronização deste grupo de aparelhos:</p>
+      <div class="sync-id-row">
+        <input type="text" id="sync-id-display" readonly>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-sync-id">📋 Copiar</button>
+      </div>
+      <p class="hint-text">Use este mesmo ID e a mesma configuração do Firebase para conectar outro aparelho.</p>
+      <button type="button" class="btn btn-danger" id="btn-disconnect-sync">Desconectar sincronização</button>
+    </div>
+
+    <h2 class="section-title">🌙 Aparência</h2>
+    <div class="theme-options">
+      <button class="btn btn-secondary theme-opt" data-theme="light">☀️ Claro</button>
+      <button class="btn btn-secondary theme-opt" data-theme="dark">🌙 Escuro</button>
+      <button class="btn btn-secondary theme-opt" data-theme="system">🖥️ Automático</button>
+    </div>
+
+    <h2 class="section-title">🗑️ Lixeira</h2>
+    <p class="hint-text">Itens excluídos ficam aqui por segurança e podem ser restaurados.</p>
+    <div id="trash-list" class="card-list"></div>
   </section>
 
 </main>
@@ -121,6 +238,8 @@
 <nav class="nav-bottom">
   <button class="nav-btn active" data-view="dashboard"><span class="ic">🏠</span><span>Início</span></button>
   <button class="nav-btn" data-view="tasks"><span class="ic">✅</span><span>Tarefas</span></button>
+  <button class="nav-btn" data-view="board"><span class="ic">🗂️</span><span>Quadro</span></button>
+  <button class="nav-btn" data-view="calendar"><span class="ic">📅</span><span>Calendário</span></button>
   <button class="nav-btn" data-view="budgets"><span class="ic">📁</span><span>Orçamentos</span></button>
   <button class="nav-btn" data-view="completed"><span class="ic">📋</span><span>Concluídas</span></button>
 </nav>
@@ -130,8 +249,23 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h3>Adicionar</h3><button class="modal-close" data-close>&times;</button></div>
     <div class="modal-body quick-choices">
-      <button class="btn btn-primary btn-block" id="quick-add-task">📌 Nova Tarefa</button>
-      <button class="btn btn-primary btn-block" id="quick-add-budget">📁 Novo Orçamento</button>
+      <button class="btn btn-primary btn-block" id="quick-add-capture">📝 Texto rápido (detecta automaticamente)</button>
+      <button class="btn btn-secondary btn-block" id="quick-add-task">📌 Nova Tarefa</button>
+      <button class="btn btn-secondary btn-block" id="quick-add-budget">📁 Novo Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Captura rápida -->
+<div id="modal-quick-capture" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3>Texto rápido</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body">
+      <p class="hint-text">Escreva do seu jeito. Vamos tentar identificar se é uma tarefa ou um orçamento e já preencher o cadastro — você revisa e salva.</p>
+      <textarea id="capture-text" rows="5" placeholder="Ex: Ligar para João amanhã sobre o processo, urgente&#10;Ex: Orçamento para Maria Souza, ação trabalhista, telefone 11999998888"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary btn-block" id="btn-analyze-capture">🔎 Analisar e preencher</button>
+      </div>
     </div>
   </div>
 </div>
@@ -151,6 +285,11 @@
       <label>Descrição
         <textarea id="task-description" rows="3" maxlength="2000"></textarea>
       </label>
+      <label>Vincular a um caso/orçamento (opcional)
+        <select id="task-budget-link">
+          <option value="">Nenhum</option>
+        </select>
+      </label>
       <div class="form-row">
         <label>Prioridade
           <select id="task-priority">
@@ -163,13 +302,37 @@
           <input type="date" id="task-due">
         </label>
       </div>
-      <label>Status
-        <select id="task-status">
-          <option value="pendente">Pendente</option>
-          <option value="andamento">Em andamento</option>
-          <option value="concluida">Concluída</option>
-        </select>
+      <div class="form-row">
+        <label>Status
+          <select id="task-status">
+            <option value="pendente">Pendente</option>
+            <option value="andamento">Em andamento</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </label>
+        <label>Repetir
+          <select id="task-recurrence">
+            <option value="none">Não repetir</option>
+            <option value="daily">Diariamente</option>
+            <option value="weekly">Semanalmente</option>
+            <option value="monthly">Mensalmente</option>
+            <option value="yearly">Anualmente</option>
+          </select>
+        </label>
+      </div>
+      <label>Etiquetas (separadas por vírgula)
+        <input type="text" id="task-tags" placeholder="Ex: urgente, trabalhista">
       </label>
+
+      <div class="subtask-section">
+        <span class="subtask-label">Subtarefas</span>
+        <div id="subtask-list" class="doc-list"></div>
+        <div class="doc-add-row">
+          <input type="text" id="subtask-name" placeholder="Adicionar passo...">
+          <button type="button" class="btn btn-secondary" id="btn-add-subtask">Adicionar</button>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button type="button" class="btn btn-danger hidden" id="task-delete">Excluir</button>
         <button type="submit" class="btn btn-primary">Salvar</button>
@@ -222,6 +385,15 @@
         <input type="text" id="doc-name" placeholder="Nome do documento" maxlength="120" required>
         <button type="submit" class="btn btn-secondary">Adicionar</button>
       </form>
+      <label class="template-label">Aplicar modelo de checklist
+        <select id="doc-template-select">
+          <option value="">Escolha um modelo...</option>
+        </select>
+      </label>
+
+      <h3 class="subtask-label">Tarefas vinculadas a este caso</h3>
+      <div id="budget-linked-tasks" class="card-list"></div>
+
       <div class="modal-actions">
         <button type="button" class="btn btn-primary btn-block" id="budget-gen-message">✉️ Gerar mensagem</button>
       </div>
@@ -246,12 +418,49 @@
   </div>
 </div>
 
+<!-- MODAL: Busca -->
+<div id="modal-search" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3>Buscar</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body">
+      <input type="search" id="search-input" placeholder="Buscar tarefas e orçamentos...">
+      <div id="search-results" class="card-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Dia do calendário -->
+<div id="modal-day" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3 id="day-modal-title">Dia</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div id="day-modal-list" class="card-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Conflito de sincronização -->
+<div id="modal-sync-conflict" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Já existem dados nos dois lados</h3></div>
+    <div class="modal-body">
+      <p class="hint-text">Encontramos dados salvos na nuvem E dados salvos neste aparelho. Qual dos dois você quer manter? A opção escolhida vai substituir a outra.</p>
+      <button type="button" class="btn btn-primary btn-block" id="btn-conflict-use-cloud">☁️ Usar os dados da nuvem</button>
+      <button type="button" class="btn btn-secondary btn-block" id="btn-conflict-use-local">💻 Usar os dados deste aparelho</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/messages.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
