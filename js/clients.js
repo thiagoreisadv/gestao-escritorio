@@ -127,3 +127,94 @@ function renderClientDetail() {
     : linkedBudgets.map((b) => budgetCardHtml(b)).join('');
   bindBudgetCardEvents(budgetsEl);
 }
+
+function propagateClientNameChange(clientId, newName) {
+  let changed = false;
+  tasks.forEach((t) => {
+    if (t.clientId === clientId && t.client !== newName) { t.client = newName; changed = true; }
+  });
+  budgets.forEach((b) => {
+    if (b.clientId === clientId && b.clientName !== newName) { b.clientName = newName; changed = true; }
+  });
+  if (changed) {
+    saveTasks(tasks);
+    saveBudgets(budgets);
+  }
+}
+
+function wireClientModal() {
+  document.getElementById('form-client').addEventListener('submit', onSubmitClient);
+  document.getElementById('client-delete').addEventListener('click', onDeleteClientFromModal);
+}
+
+function openClientModal(id) {
+  const form = document.getElementById('form-client');
+  form.reset();
+  const deleteBtn = document.getElementById('client-delete');
+  if (id) {
+    const client = findClientById(id);
+    if (!client) return;
+    document.getElementById('client-modal-title').textContent = 'Editar Cliente';
+    document.getElementById('client-id').value = client.id;
+    document.getElementById('client-nome').value = client.nome;
+    document.getElementById('client-telefone').value = client.telefone || '';
+    document.getElementById('client-email').value = client.email || '';
+    document.getElementById('client-cpf-cnpj').value = client.cpfCnpj || '';
+    document.getElementById('client-endereco').value = client.endereco || '';
+    document.getElementById('client-tags').value = (client.tags || []).join(', ');
+    document.getElementById('client-observacoes').value = client.observacoes || '';
+    deleteBtn.classList.remove('hidden');
+  } else {
+    document.getElementById('client-modal-title').textContent = 'Novo Cliente';
+    document.getElementById('client-id').value = '';
+    deleteBtn.classList.add('hidden');
+  }
+  openModal('modal-client');
+}
+
+function onSubmitClient(e) {
+  e.preventDefault();
+  const id = document.getElementById('client-id').value;
+  const nome = document.getElementById('client-nome').value.trim();
+  if (!nome) return;
+
+  const data = {
+    nome,
+    telefone: document.getElementById('client-telefone').value.trim(),
+    email: document.getElementById('client-email').value.trim(),
+    cpfCnpj: document.getElementById('client-cpf-cnpj').value.trim(),
+    endereco: document.getElementById('client-endereco').value.trim(),
+    tags: parseTags(document.getElementById('client-tags').value),
+    observacoes: document.getElementById('client-observacoes').value.trim()
+  };
+
+  let savedId = id;
+  if (id) {
+    const idx = clients.findIndex((c) => c.id === id);
+    if (idx !== -1) clients[idx] = { ...clients[idx], ...data };
+    propagateClientNameChange(id, nome);
+  } else {
+    savedId = uid();
+    clients.push({ id: savedId, createdAt: new Date().toISOString(), ...data });
+  }
+  saveClients(clients);
+  closeModal('modal-client');
+  renderAll();
+  openClientDetail(savedId);
+  showToast('Cliente salvo.');
+}
+
+function onDeleteClientFromModal() {
+  const id = document.getElementById('client-id').value;
+  if (!id) return;
+  const client = findClientById(id);
+  if (!client) return;
+  if (!window.confirm('Excluir este cliente? Ele ficará na lixeira e pode ser restaurado. Tarefas e orçamentos vinculados não serão excluídos.')) return;
+  moveClientToTrash(client);
+  clients = clients.filter((c) => c.id !== id);
+  saveClients(clients);
+  closeModal('modal-client');
+  closeClientDetail();
+  renderAll();
+  showToast('Cliente movido para a lixeira.');
+}

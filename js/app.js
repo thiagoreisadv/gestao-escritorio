@@ -1275,15 +1275,23 @@ function moveBudgetToTrash(budget) {
   saveTrash(trash);
 }
 
+function moveClientToTrash(client) {
+  trash.push({ id: uid(), type: 'client', data: client, deletedAt: new Date().toISOString() });
+  saveTrash(trash);
+}
+
 function restoreTrashItem(trashId) {
   const entry = trash.find((t) => t.id === trashId);
   if (!entry) return;
   if (entry.type === 'task') {
     tasks.push(entry.data);
     saveTasks(tasks);
-  } else {
+  } else if (entry.type === 'budget') {
     budgets.push(entry.data);
     saveBudgets(budgets);
+  } else if (entry.type === 'client') {
+    clients.push(entry.data);
+    saveClients(clients);
   }
   trash = trash.filter((t) => t.id !== trashId);
   saveTrash(trash);
@@ -1307,8 +1315,8 @@ function renderTrash() {
   }
   const list = trash.slice().sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
   container.innerHTML = list.map((entry) => {
-    const name = entry.type === 'task' ? entry.data.title : entry.data.clientName;
-    const typeLabel = entry.type === 'task' ? '📌 Tarefa' : '📁 Orçamento';
+    const name = entry.type === 'task' ? entry.data.title : entry.type === 'budget' ? entry.data.clientName : entry.data.nome;
+    const typeLabel = entry.type === 'task' ? '📌 Tarefa' : entry.type === 'budget' ? '📁 Orçamento' : '👤 Cliente';
     return `
     <div class="item-card">
       <div class="item-title-wrap">
