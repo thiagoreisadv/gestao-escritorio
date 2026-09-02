@@ -31,6 +31,7 @@ function init() {
   wireTaskModal();
   setupClientAutocomplete('task-client-input', 'task-client-id', 'task-client-dropdown');
   wireBudgetModal();
+  setupClientAutocomplete('budget-client-input', 'budget-client-id', 'budget-client-dropdown');
   wireBudgetDetailModal();
   wireMessageModal();
   wireDataView();
@@ -225,7 +226,7 @@ function onAnalyzeCapture() {
 
   if (result.type === 'budget') {
     openBudgetModal();
-    document.getElementById('budget-client').value = result.fields.clientName;
+    document.getElementById('budget-client-input').value = result.fields.clientName;
     document.getElementById('budget-description').value = result.fields.description;
     document.getElementById('budget-phone').value = result.fields.phone;
     showToast('📁 Identifiquei um orçamento. Revise os campos e salve.');
@@ -776,7 +777,8 @@ function openBudgetModal(id) {
     if (!budget) return;
     document.getElementById('budget-modal-title').textContent = 'Editar Orçamento';
     document.getElementById('budget-id').value = budget.id;
-    document.getElementById('budget-client').value = budget.clientName;
+    document.getElementById('budget-client-input').value = budget.clientName;
+    document.getElementById('budget-client-id').value = budget.clientId || '';
     document.getElementById('budget-phone').value = budget.phone || '';
     document.getElementById('budget-description').value = budget.description || '';
     document.getElementById('budget-status').value = budget.status;
@@ -792,11 +794,12 @@ function openBudgetModal(id) {
 function onSubmitBudget(e) {
   e.preventDefault();
   const id = document.getElementById('budget-id').value;
-  const clientName = document.getElementById('budget-client').value.trim();
-  if (!clientName) return;
+  const clientInfo = resolveClientIdFromInput('budget-client-input', 'budget-client-id');
+  if (!clientInfo.clientName) return;
 
   const data = {
-    clientName,
+    clientName: clientInfo.clientName,
+    clientId: clientInfo.clientId,
     phone: document.getElementById('budget-phone').value.trim(),
     description: document.getElementById('budget-description').value.trim(),
     status: document.getElementById('budget-status').value

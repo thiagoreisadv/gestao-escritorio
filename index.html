@@ -393,7 +393,11 @@
     <form id="form-budget" class="modal-body">
       <input type="hidden" id="budget-id">
       <label>Nome do cliente*
-        <input type="text" id="budget-client" required maxlength="120">
+        <div class="client-autocomplete">
+          <input type="text" id="budget-client-input" required maxlength="120" autocomplete="off" placeholder="Digite para buscar ou criar">
+          <input type="hidden" id="budget-client-id">
+          <div class="client-ac-dropdown hidden" id="budget-client-dropdown"></div>
+        </div>
       </label>
       <label>Telefone (WhatsApp, opcional)
         <input type="tel" id="budget-phone" placeholder="Ex: 11999998888" maxlength="20">
