@@ -2,6 +2,8 @@
 const STORAGE_KEYS = {
   TASKS: 'lex_tasks',
   BUDGETS: 'lex_budgets',
+  CLIENTS: 'lex_clients',
+  CLIENTS_MIGRATED: 'lex_clients_migrated',
   TRASH: 'lex_trash',
   LAST_EXPORT: 'lex_last_export',
   THEME: 'lex_theme'
@@ -46,6 +48,14 @@ function saveBudgets(budgets) {
   return persist(STORAGE_KEYS.BUDGETS, budgets);
 }
 
+function loadClients() {
+  return safeParse(localStorage.getItem(STORAGE_KEYS.CLIENTS), []);
+}
+
+function saveClients(clients) {
+  return persist(STORAGE_KEYS.CLIENTS, clients);
+}
+
 function loadTrash() {
   return safeParse(localStorage.getItem(STORAGE_KEYS.TRASH), []);
 }
@@ -70,7 +80,7 @@ function persist(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
     showStorageAlert(null);
-    if (key !== STORAGE_KEYS.TASKS && key !== STORAGE_KEYS.BUDGETS && key !== STORAGE_KEYS.TRASH) return true;
+    if (key !== STORAGE_KEYS.TASKS && key !== STORAGE_KEYS.BUDGETS && key !== STORAGE_KEYS.TRASH && key !== STORAGE_KEYS.CLIENTS) return true;
     if (typeof window.syncNotifyLocalChange === 'function') window.syncNotifyLocalChange();
     return true;
   } catch (e) {
@@ -101,6 +111,7 @@ function buildBackupPayload() {
     exportedAt: new Date().toISOString(),
     tasks: loadTasks(),
     budgets: loadBudgets(),
+    clients: loadClients(),
     trash: loadTrash()
   };
 }
@@ -138,7 +149,7 @@ function importDataFromFile(file, onDone) {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!data || (!Array.isArray(data.tasks) && !Array.isArray(data.budgets))) {
+      if (!data || (!Array.isArray(data.tasks) && !Array.isArray(data.budgets) && !Array.isArray(data.clients))) {
         showToast('Arquivo inválido.');
         return;
       }
@@ -146,6 +157,7 @@ function importDataFromFile(file, onDone) {
       if (!window.confirm(confirmMsg)) return;
       if (Array.isArray(data.tasks)) saveTasks(data.tasks);
       if (Array.isArray(data.budgets)) saveBudgets(data.budgets);
+      if (Array.isArray(data.clients)) saveClients(data.clients);
       if (Array.isArray(data.trash)) saveTrash(data.trash);
       showToast('Backup importado com sucesso.');
       if (typeof onDone === 'function') onDone();
