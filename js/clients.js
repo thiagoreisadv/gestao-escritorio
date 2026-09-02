@@ -218,3 +218,93 @@ function onDeleteClientFromModal() {
   renderAll();
   showToast('Cliente movido para a lixeira.');
 }
+
+function setupClientAutocomplete(inputId, hiddenIdId, dropdownId) {
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenIdId);
+  const dropdown = document.getElementById(dropdownId);
+
+  function closeDropdown() {
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
+  }
+
+  function renderSuggestions() {
+    const query = input.value.trim().toLowerCase();
+    let matches = clients;
+    if (query) matches = clients.filter((c) => c.nome.toLowerCase().includes(query));
+    matches = matches.slice(0, 6);
+
+    let html = matches.map((c) => `
+      <div class="client-ac-item" data-id="${c.id}">
+        <span class="client-ac-avatar" style="background:${clientAvatarColor(c.id)}">${clientInitials(c.nome)}</span>
+        ${escapeHtml(c.nome)}
+      </div>`).join('');
+
+    const trimmed = input.value.trim();
+    const exactMatch = trimmed && clients.some((c) => c.nome.toLowerCase() === trimmed.toLowerCase());
+    if (trimmed && !exactMatch) {
+      html += `<div class="client-ac-new" data-new="${escapeHtml(trimmed)}">＋ Criar cliente "${escapeHtml(trimmed)}"</div>`;
+    }
+
+    if (!html) {
+      closeDropdown();
+      return;
+    }
+    dropdown.innerHTML = html;
+    dropdown.classList.remove('hidden');
+
+    dropdown.querySelectorAll('.client-ac-item').forEach((item) => {
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const client = findClientById(item.dataset.id);
+        if (!client) return;
+        input.value = client.nome;
+        hidden.value = client.id;
+        closeDropdown();
+      });
+    });
+    const newItem = dropdown.querySelector('.client-ac-new');
+    if (newItem) {
+      newItem.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const name = newItem.dataset.new;
+        const client = { id: uid(), nome: name, telefone: '', email: '', cpfCnpj: '', endereco: '', observacoes: '', tags: [], createdAt: new Date().toISOString() };
+        clients.push(client);
+        saveClients(clients);
+        input.value = client.nome;
+        hidden.value = client.id;
+        closeDropdown();
+      });
+    }
+  }
+
+  input.addEventListener('input', () => {
+    hidden.value = '';
+    renderSuggestions();
+  });
+  input.addEventListener('focus', renderSuggestions);
+  input.addEventListener('blur', () => setTimeout(closeDropdown, 120));
+}
+
+function resolveClientIdFromInput(inputId, hiddenIdId) {
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenIdId);
+  const trimmed = input.value.trim();
+  if (!trimmed) return { clientId: '', clientName: '' };
+
+  if (hidden.value) {
+    const existing = findClientById(hidden.value);
+    if (existing && existing.nome.toLowerCase() === trimmed.toLowerCase()) {
+      return { clientId: existing.id, clientName: existing.nome };
+    }
+  }
+
+  const match = clients.find((c) => c.nome.toLowerCase() === trimmed.toLowerCase());
+  if (match) return { clientId: match.id, clientName: match.nome };
+
+  const client = { id: uid(), nome: trimmed, telefone: '', email: '', cpfCnpj: '', endereco: '', observacoes: '', tags: [], createdAt: new Date().toISOString() };
+  clients.push(client);
+  saveClients(clients);
+  return { clientId: client.id, clientName: client.nome };
+}
