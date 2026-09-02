@@ -63,3 +63,67 @@ function renderClientsList() {
     row.addEventListener('click', () => openClientDetail(row.dataset.id));
   });
 }
+
+let currentClientDetailId = null;
+
+function openClientDetail(id) {
+  currentClientDetailId = id;
+  renderClientDetail();
+  document.getElementById('clients-layout').classList.add('detail-open');
+  document.querySelectorAll('#clients-list .client-row').forEach((row) => {
+    row.classList.toggle('active', row.dataset.id === id);
+  });
+}
+
+function closeClientDetail() {
+  document.getElementById('clients-layout').classList.remove('detail-open');
+}
+
+function renderClientDetail() {
+  const client = findClientById(currentClientDetailId);
+  const emptyEl = document.getElementById('client-detail-empty');
+  const contentEl = document.getElementById('client-detail-content');
+  if (!emptyEl || !contentEl) return;
+
+  if (!client) {
+    emptyEl.classList.remove('hidden');
+    contentEl.classList.add('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+  contentEl.classList.remove('hidden');
+
+  const avatarEl = document.getElementById('client-detail-avatar');
+  avatarEl.textContent = clientInitials(client.nome);
+  avatarEl.style.background = clientAvatarColor(client.id);
+  document.getElementById('client-detail-name').textContent = client.nome;
+  document.getElementById('client-detail-tags').innerHTML = (client.tags || [])
+    .map((t) => `<span class="badge badge-tag">${escapeHtml(t)}</span>`).join('');
+
+  const fields = [
+    ['Telefone', client.telefone],
+    ['E-mail', client.email],
+    ['CPF/CNPJ', client.cpfCnpj],
+    ['Endereço', client.endereco]
+  ].filter(([, value]) => value);
+  document.getElementById('client-detail-fields').innerHTML = fields.length === 0
+    ? '<div class="hint-text">Nenhum dado de contato cadastrado.</div>'
+    : fields.map(([label, value]) => `<div class="field-row"><b>${label}</b> ${escapeHtml(value)}</div>`).join('');
+
+  document.getElementById('client-detail-notes').textContent = client.observacoes || '';
+  document.getElementById('client-detail-notes-wrap').classList.toggle('hidden', !client.observacoes);
+
+  const linkedTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'concluida');
+  const tasksEl = document.getElementById('client-detail-tasks');
+  tasksEl.innerHTML = linkedTasks.length === 0
+    ? '<div class="empty-state">Nenhuma tarefa vinculada.</div>'
+    : linkedTasks.map((t) => taskCardHtml(t)).join('');
+  bindTaskCardEvents(tasksEl);
+
+  const linkedBudgets = budgets.filter((b) => b.clientId === client.id);
+  const budgetsEl = document.getElementById('client-detail-budgets');
+  budgetsEl.innerHTML = linkedBudgets.length === 0
+    ? '<div class="empty-state">Nenhum orçamento vinculado.</div>'
+    : linkedBudgets.map((b) => budgetCardHtml(b)).join('');
+  bindBudgetCardEvents(budgetsEl);
+}
