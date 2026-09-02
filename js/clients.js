@@ -46,6 +46,11 @@ function clientCardHtml(c) {
   </div>`;
 }
 
+function renderClients() {
+  renderClientsList();
+  renderClientDetail();
+}
+
 function renderClientsList() {
   const container = document.getElementById('clients-list');
   if (!container) return;
@@ -145,6 +150,13 @@ function propagateClientNameChange(clientId, newName) {
 function wireClientModal() {
   document.getElementById('form-client').addEventListener('submit', onSubmitClient);
   document.getElementById('client-delete').addEventListener('click', onDeleteClientFromModal);
+}
+
+function wireClientsView() {
+  document.getElementById('btn-new-client').addEventListener('click', () => openClientModal());
+  document.getElementById('client-search').addEventListener('input', renderClientsList);
+  document.getElementById('btn-client-back').addEventListener('click', closeClientDetail);
+  document.getElementById('btn-client-edit').addEventListener('click', () => openClientModal(currentClientDetailId));
 }
 
 function openClientModal(id) {

@@ -32,6 +32,8 @@ function init() {
   setupClientAutocomplete('task-client-input', 'task-client-id', 'task-client-dropdown');
   wireBudgetModal();
   setupClientAutocomplete('budget-client-input', 'budget-client-id', 'budget-client-dropdown');
+  wireClientModal();
+  wireClientsView();
   wireBudgetDetailModal();
   wireMessageModal();
   wireDataView();
@@ -50,6 +52,7 @@ function renderAll() {
   renderDashboard();
   renderTasks();
   renderBudgets();
+  renderClients();
   renderCompleted();
   renderTrash();
   renderBackupReminder();
@@ -1225,6 +1228,7 @@ function wireDataView() {
     importDataFromFile(file, () => {
       tasks = loadTasks();
       budgets = loadBudgets();
+      clients = loadClients();
       trash = loadTrash();
       renderAll();
     });
