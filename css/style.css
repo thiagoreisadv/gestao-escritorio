@@ -732,4 +732,5 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--blue-500);outlin
   .clients-list-pane{flex:0 0 280px;margin-bottom:0;}
   .clients-detail-pane{display:block;flex:1;min-width:0;}
   .clients-back{display:none;}
+  .clients-layout.detail-open .clients-list-pane{display:block;}
 }
