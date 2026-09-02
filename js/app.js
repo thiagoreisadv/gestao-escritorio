@@ -560,6 +560,7 @@ function maybeCreateRecurrence(task) {
     createdAt: new Date().toISOString(),
     title: task.title,
     client: task.client || '',
+    clientId: task.clientId || '',
     description: task.description || '',
     priority: task.priority,
     dueDate: nextDueDate,
@@ -1230,6 +1231,17 @@ function wireDataView() {
       budgets = loadBudgets();
       clients = loadClients();
       trash = loadTrash();
+
+      const migrated = migrateClientsFromLegacyText(tasks, budgets, clients);
+      if (migrated.changed) {
+        tasks = migrated.tasks;
+        budgets = migrated.budgets;
+        clients = migrated.clients;
+        saveTasks(tasks);
+        saveBudgets(budgets);
+        saveClients(clients);
+      }
+
       renderAll();
     });
     e.target.value = '';

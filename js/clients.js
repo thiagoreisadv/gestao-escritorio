@@ -28,7 +28,7 @@ function clientBudgetCount(clientId) {
 }
 
 function clientCardHtml(c) {
-  const initials = clientInitials(c.nome);
+  const initials = escapeHtml(clientInitials(c.nome));
   const color = clientAvatarColor(c.id);
   const total = clientTaskCount(c.id) + clientBudgetCount(c.id);
   const metaParts = [];
@@ -66,6 +66,7 @@ function renderClientsList() {
   container.innerHTML = list.map((c) => clientCardHtml(c)).join('');
   container.querySelectorAll('.client-row').forEach((row) => {
     row.addEventListener('click', () => openClientDetail(row.dataset.id));
+    row.classList.toggle('active', row.dataset.id === currentClientDetailId);
   });
 }
 
@@ -118,7 +119,7 @@ function renderClientDetail() {
   document.getElementById('client-detail-notes').textContent = client.observacoes || '';
   document.getElementById('client-detail-notes-wrap').classList.toggle('hidden', !client.observacoes);
 
-  const linkedTasks = tasks.filter((t) => t.clientId === client.id && t.status !== 'concluida');
+  const linkedTasks = tasks.filter((t) => t.clientId === client.id);
   const tasksEl = document.getElementById('client-detail-tasks');
   tasksEl.innerHTML = linkedTasks.length === 0
     ? '<div class="empty-state">Nenhuma tarefa vinculada.</div>'
@@ -249,7 +250,7 @@ function setupClientAutocomplete(inputId, hiddenIdId, dropdownId) {
 
     let html = matches.map((c) => `
       <div class="client-ac-item" data-id="${c.id}">
-        <span class="client-ac-avatar" style="background:${clientAvatarColor(c.id)}">${clientInitials(c.nome)}</span>
+        <span class="client-ac-avatar" style="background:${clientAvatarColor(c.id)}">${escapeHtml(clientInitials(c.nome))}</span>
         ${escapeHtml(c.nome)}
       </div>`).join('');
 

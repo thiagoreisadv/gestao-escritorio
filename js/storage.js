@@ -159,6 +159,11 @@ function importDataFromFile(file, onDone) {
       if (Array.isArray(data.budgets)) saveBudgets(data.budgets);
       if (Array.isArray(data.clients)) saveClients(data.clients);
       if (Array.isArray(data.trash)) saveTrash(data.trash);
+      // Backups exportados antes da funcionalidade de Clientes podem não ter
+      // `clientId` em tarefas/orçamentos. Como a migração só roda uma vez por
+      // dispositivo, limpamos a flag para que ela seja reexecutada (via onDone)
+      // e os dados recém-importados sejam vinculados corretamente.
+      localStorage.removeItem(STORAGE_KEYS.CLIENTS_MIGRATED);
       showToast('Backup importado com sucesso.');
       if (typeof onDone === 'function') onDone();
     } catch (e) {
