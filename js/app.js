@@ -283,7 +283,28 @@ function renderDashboard() {
     bindTaskCardEvents(container);
   }
 
+  renderDonuts();
   renderDistributions();
+}
+
+function renderDonutRing(ringId, labelId, pct, ringColor) {
+  const ring = document.getElementById(ringId);
+  const label = document.getElementById(labelId);
+  ring.style.setProperty('--pct', pct);
+  ring.style.setProperty('--ring-color', ringColor);
+  label.textContent = `${pct}%`;
+}
+
+function renderDonuts() {
+  const totalTasks = tasks.length;
+  const doneTasks = tasks.filter((t) => t.status === 'concluida').length;
+  const tasksPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  renderDonutRing('donut-tasks', 'donut-tasks-label', tasksPct, 'var(--blue-500)');
+
+  const totalBudgets = budgets.length;
+  const acceptedBudgets = budgets.filter((b) => b.status === 'aceito').length;
+  const budgetsPct = totalBudgets > 0 ? Math.round((acceptedBudgets / totalBudgets) * 100) : 0;
+  renderDonutRing('donut-budgets', 'donut-budgets-label', budgetsPct, '#22d3ee');
 }
 
 function renderDistributionBar(barEl, legendEl, segments) {

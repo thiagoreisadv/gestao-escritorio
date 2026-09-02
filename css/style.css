@@ -274,6 +274,46 @@ button{font-family:inherit;}
 .dist-legend{display:flex;flex-wrap:wrap;gap:.5rem .9rem;margin-top:.65rem;font-size:.76rem;color:var(--text-secondary);}
 .dist-legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.35rem;}
 
+/* Anéis de progresso (Dashboard) */
+.donut-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.75rem;
+  margin-top:1.25rem;
+}
+.donut-card{
+  background:var(--bg-surface);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:1rem;
+  display:flex;
+  align-items:center;
+  gap:.9rem;
+}
+.donut-ring{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:conic-gradient(var(--ring-color, var(--blue-500)) calc(var(--pct, 0) * 1%), var(--bg-surface-alt-2) 0);
+}
+.donut-ring span{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  background:var(--bg-surface);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.85rem;
+  font-weight:800;
+  color:var(--text-primary);
+}
+.donut-label{font-size:.85rem;font-weight:700;color:var(--text-secondary);}
+
 /* Backup reminder */
 .backup-reminder{
   background:var(--amber-100);
