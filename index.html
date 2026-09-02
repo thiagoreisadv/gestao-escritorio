@@ -320,8 +320,12 @@
       <label>Título*
         <input type="text" id="task-title" required maxlength="120">
       </label>
-      <label>Cliente/Destinatário (opcional)
-        <input type="text" id="task-client" maxlength="120">
+      <label>Cliente (opcional)
+        <div class="client-autocomplete">
+          <input type="text" id="task-client-input" maxlength="120" autocomplete="off" placeholder="Digite para buscar ou criar">
+          <input type="hidden" id="task-client-id">
+          <div class="client-ac-dropdown hidden" id="task-client-dropdown"></div>
+        </div>
       </label>
       <label>Descrição
         <textarea id="task-description" rows="3" maxlength="2000"></textarea>

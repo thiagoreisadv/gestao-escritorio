@@ -29,6 +29,7 @@ function init() {
   wireNav();
   wireFab();
   wireTaskModal();
+  setupClientAutocomplete('task-client-input', 'task-client-id', 'task-client-dropdown');
   wireBudgetModal();
   wireBudgetDetailModal();
   wireMessageModal();
@@ -232,7 +233,7 @@ function onAnalyzeCapture() {
     openTaskModal();
     document.getElementById('task-title').value = result.fields.title;
     document.getElementById('task-description').value = result.fields.description;
-    document.getElementById('task-client').value = result.fields.client;
+    document.getElementById('task-client-input').value = result.fields.client;
     document.getElementById('task-priority').value = result.fields.priority;
     document.getElementById('task-due').value = result.fields.dueDate;
     showToast('📌 Identifiquei uma tarefa. Revise os campos e salve.');
@@ -451,7 +452,8 @@ function openTaskModal(id) {
     document.getElementById('task-modal-title').textContent = 'Editar Tarefa';
     document.getElementById('task-id').value = task.id;
     document.getElementById('task-title').value = task.title;
-    document.getElementById('task-client').value = task.client || '';
+    document.getElementById('task-client-input').value = task.client || '';
+    document.getElementById('task-client-id').value = task.clientId || '';
     document.getElementById('task-description').value = task.description || '';
     document.getElementById('task-priority').value = task.priority;
     document.getElementById('task-due').value = task.dueDate || '';
@@ -481,9 +483,11 @@ function onSubmitTask(e) {
   if (!title) return;
 
   const newStatus = document.getElementById('task-status').value;
+  const clientInfo = resolveClientIdFromInput('task-client-input', 'task-client-id');
   const data = {
     title,
-    client: document.getElementById('task-client').value.trim(),
+    client: clientInfo.clientName,
+    clientId: clientInfo.clientId,
     description: document.getElementById('task-description').value.trim(),
     priority: document.getElementById('task-priority').value,
     dueDate: document.getElementById('task-due').value,
