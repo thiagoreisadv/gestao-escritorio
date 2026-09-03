@@ -20,7 +20,7 @@
   --radius:14px;
   --shadow:0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
   --shadow-md:0 8px 24px rgba(0,0,0,.14);
-  --brand-gradient:linear-gradient(90deg, #f472b6, #a855f7 55%, #22d3ee);
+  --brand-gradient:linear-gradient(90deg, #f9a8d4, #d8b4fe 55%, #67e8f9);
 
   /* Tokens semânticos (tema claro) */
   --bg-page:#faf5ff;
@@ -125,7 +125,7 @@ button{font-family:inherit;}
   position:absolute;
   left:.85rem;right:.85rem;bottom:-1px;
   height:2px;
-  background:#5ba3f5;
+  background:var(--blue-100);
   border-radius:2px;
   transform:scaleX(0);
   transition:transform .18s ease;
@@ -433,7 +433,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--blue-500);outlin
   transition:background .15s,transform .1s;
 }
 .btn:active{transform:scale(.97);}
-.btn-primary{background:linear-gradient(135deg,var(--blue-500) 0%,var(--blue-700) 100%);color:var(--white);box-shadow:0 2px 8px rgba(44,82,130,.28);}
+.btn-primary{background:linear-gradient(135deg,var(--blue-500) 0%,var(--blue-700) 100%);color:var(--white);box-shadow:0 2px 8px rgba(147,51,234,.28);}
 .btn-primary:hover{background:linear-gradient(135deg,var(--blue-700) 0%,var(--blue-900) 100%);}
 .btn-secondary{background:var(--bg-surface-alt-2);color:var(--text-primary);}
 .btn-secondary:hover{background:var(--border-color);}
@@ -478,13 +478,13 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--blue-500);outlin
   color:var(--white);
   font-size:1.8rem;
   border:none;
-  box-shadow:0 6px 20px rgba(44,82,130,.4);
+  box-shadow:0 6px 20px rgba(147,51,234,.4);
   cursor:pointer;
   z-index:25;
   line-height:1;
   transition:transform .15s,box-shadow .15s;
 }
-.fab:hover{transform:scale(1.06);box-shadow:0 8px 26px rgba(44,82,130,.5);}
+.fab:hover{transform:scale(1.06);box-shadow:0 8px 26px rgba(147,51,234,.5);}
 .fab:active{transform:scale(.95);}
 @media (min-width:768px){.fab{bottom:1.5rem;}}
 

@@ -133,7 +133,7 @@ async function shareBackup() {
   try {
     await navigator.share({
       files: [file],
-      title: 'Backup — Gestão do Escritório',
+      title: 'Backup — Thiago Reis Advocacia',
       text: 'Backup dos dados do sistema de gestão. Importe este arquivo em "Dados e Backup" no outro aparelho.'
     });
     setLastExportAt(payload.exportedAt);
