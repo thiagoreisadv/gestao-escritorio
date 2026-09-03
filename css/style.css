@@ -277,7 +277,7 @@ button{font-family:inherit;}
 /* Anéis de progresso (Dashboard) */
 .donut-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:.75rem;
   margin-top:1.25rem;
 }
@@ -289,6 +289,7 @@ button{font-family:inherit;}
   display:flex;
   align-items:center;
   gap:.9rem;
+  min-width:0;
 }
 .donut-ring{
   width:64px;
@@ -312,7 +313,7 @@ button{font-family:inherit;}
   font-weight:800;
   color:var(--text-primary);
 }
-.donut-label{font-size:.85rem;font-weight:700;color:var(--text-secondary);}
+.donut-label{font-size:.85rem;font-weight:700;color:var(--text-secondary);min-width:0;overflow-wrap:break-word;}
 
 /* Backup reminder */
 .backup-reminder{
